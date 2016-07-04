@@ -1,0 +1,33 @@
+plugins {
+    id "java"
+    id "idea"
+}
+
+repositories {
+    mavenCentral()
+}
+
+group = "xyz.papermodloader"
+version = getVersion()
+archivesBaseName = "book"
+sourceCompatibility = targetCompatibility = "1.8"
+
+dependencies {
+    compile "org.ow2.asm:asm-debug-all:5.1"
+    compile "com.google.code.gson:gson:2.3.1"
+    compile "org.apache.commons:commons-lang3:3.4"
+}
+
+String getVersion() {
+    String version = "0.0.0"
+    String prefix = "public static final String VERSION = \"";
+    File file = file("src/main/java/xyz/papermodloader/book/Book.java")
+    file.eachLine { String s ->
+        s = s.trim();
+        if (s.startsWith(prefix)) {
+            s = s.substring(prefix.length(), s.length() - 2);
+            version = s;
+        }
+    }
+    return version;
+}
