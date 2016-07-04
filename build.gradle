@@ -41,7 +41,7 @@ publishing {
     publications {
         mavenJava(MavenPublication) {
             groupId "xyz.papermodloader"
-            artifactId "paper"
+            artifactId "book"
             from components.java
         }
     }
