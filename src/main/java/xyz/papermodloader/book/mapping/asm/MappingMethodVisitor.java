@@ -5,6 +5,9 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import xyz.papermodloader.book.mapping.Mappings;
+import xyz.papermodloader.book.util.DefaultedHashMap;
+
+import java.util.Map;
 
 public class MappingMethodVisitor extends MethodVisitor {
     private Mappings mappings;
@@ -13,7 +16,7 @@ public class MappingMethodVisitor extends MethodVisitor {
     private String owner;
     private String descriptor;
 
-    private int localVariableIndex = 1;
+    private Map<String, Integer> variableIndex = new DefaultedHashMap<>(0);
 
     public MappingMethodVisitor(String name, String owner, String descriptor, Mappings mappings, int api, MethodVisitor visitor) {
         super(api, visitor);
@@ -81,22 +84,36 @@ public class MappingMethodVisitor extends MethodVisitor {
         if (mappedParameterName == null && !name.equals("this")) {
             String className = Type.getType(descriptor).getClassName();
             switch (className) {
-                case "int":
-                    className = "i";
-                    break;
                 case "boolean":
+                    className = "z";
+                    break;
+                case "char":
+                    className = "c";
+                    break;
+                case "byte":
                     className = "b";
                     break;
-                case "double":
-                    className = "d";
+                case "short":
+                    className = "s";
+                    break;
+                case "int":
+                    className = "i";
                     break;
                 case "float":
                     className = "f";
                     break;
+                case "long":
+                    className = "l";
+                    break;
+                case "double":
+                    className = "d";
+                    break;
             }
             if (className.length() > 0) {
                 name = (className.contains(".") ? className.substring(className.lastIndexOf('.') + 1) : className);
-                name = Character.toLowerCase(name.charAt(0)) + name.substring(1) + this.localVariableIndex++;
+                int variableIndex = this.variableIndex.get(name);
+                name = Character.toLowerCase(name.charAt(0)) + name.substring(1) + (variableIndex == 0 ? "" : variableIndex);
+                this.variableIndex.put(name, variableIndex + 1);
             }
         } else if (mappedParameterName != null) {
             name = mappedParameterName;

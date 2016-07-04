@@ -2,7 +2,7 @@ package xyz.papermodloader.book.converter;
 
 import com.google.gson.*;
 import org.apache.commons.lang3.StringEscapeUtils;
-import xyz.papermodloader.book.Arguments;
+import xyz.papermodloader.book.util.Arguments;
 import xyz.papermodloader.book.converter.enigma.ArgumentMapping;
 import xyz.papermodloader.book.converter.enigma.ClassMapping;
 import xyz.papermodloader.book.converter.enigma.FieldMapping;

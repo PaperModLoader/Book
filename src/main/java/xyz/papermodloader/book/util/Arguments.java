@@ -1,4 +1,4 @@
-package xyz.papermodloader.book;
+package xyz.papermodloader.book.util;
 
 import java.util.*;
 

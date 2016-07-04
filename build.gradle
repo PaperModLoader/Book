@@ -1,6 +1,7 @@
 plugins {
     id "java"
     id "idea"
+    id "maven-publish"
 }
 
 repositories {
@@ -11,6 +12,10 @@ group = "xyz.papermodloader"
 version = getVersion()
 archivesBaseName = "book"
 sourceCompatibility = targetCompatibility = "1.8"
+
+if (System.getenv().BUILD_NUMBER) {
+    version = version + "." + "${System.getenv().BUILD_NUMBER}"
+}
 
 dependencies {
     compile "org.ow2.asm:asm-debug-all:5.1"
@@ -30,4 +35,32 @@ String getVersion() {
         }
     }
     return version;
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId "xyz.papermodloader"
+            artifactId "paper"
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            credentials {
+                if (System.getenv().PASSWORD) {
+                    username System.getenv().USERNAME
+                    password System.getenv().PASSWORD
+                } else {
+                    username ""
+                    password ""
+                }
+            }
+            if (System.getenv().PASSWORD) {
+                url System.getenv().REPO
+            } else {
+                url "file:///var/www/maven/"
+            }
+        }
+    }
 }

@@ -6,6 +6,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 import xyz.papermodloader.book.mapping.asm.BookClassVisitor;
 import xyz.papermodloader.book.mapping.Mappings;
+import xyz.papermodloader.book.util.Arguments;
 
 import java.io.File;
 import java.io.FileInputStream;
