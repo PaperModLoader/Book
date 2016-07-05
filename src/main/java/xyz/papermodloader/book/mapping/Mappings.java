@@ -1,8 +1,6 @@
 package xyz.papermodloader.book.mapping;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.signature.SignatureReader;
@@ -12,105 +10,129 @@ import xyz.papermodloader.book.asm.MappingSignatureVisitor;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class Mappings {
-    private Map<String, JsonObject> classMappings;
-    private Map<String, List<MappedField>> fieldMappings;
-    private Map<String, List<MappedMethod>> methodMappings;
+    private MappedClass[] classes;
 
-    public Mappings(InputStream stream) {
+    private Mappings(MappedClass[] classes) {
+        this.classes = classes;
+    }
+
+    public static Mappings parseMappings(InputStream stream) {
         JsonParser parser = new JsonParser();
-        Gson gson = new Gson();
-        JsonObject root = parser.parse(new InputStreamReader(stream)).getAsJsonObject();
-        this.classMappings = new HashMap<>();
-        this.fieldMappings = new HashMap<>();
-        this.methodMappings = new HashMap<>();
-        for (Map.Entry<String, JsonElement> entry : root.entrySet()) {
-            JsonObject object = entry.getValue().getAsJsonObject();
-            this.classMappings.put(entry.getKey(), object);
-            List<MappedField> fields = new ArrayList<>();
-            for (Map.Entry<String, JsonElement> field : object.get("fields").getAsJsonObject().entrySet()) {
-                MappedField mappedField = gson.fromJson(field.getValue(), MappedField.class);
-                mappedField.setUnmappedName(field.getKey());
-                fields.add(mappedField);
+        JsonArray array = parser.parse(new InputStreamReader(stream)).getAsJsonArray();
+        MappedClass[] classes = new MappedClass[array.size()];
+        for (int i = 0; i < classes.length; i++) {
+            classes[i] = new MappedClass(array.get(i).getAsJsonObject());
+        }
+        return new Mappings(classes);
+    }
+
+    public MappedClass getMappedClass(String obf) {
+        if (obf == null) {
+            return null;
+        }
+        String[] split = obf.contains("$") ? obf.split("\\$") : null;
+        if (split == null) {
+            for (MappedClass mappedClass : this.classes) {
+                if (mappedClass.getObf().equals(obf)) {
+                    return mappedClass;
+                }
             }
-            this.fieldMappings.put(entry.getKey(), fields);
-            List<MappedMethod> methods = new ArrayList<>();
-            for (Map.Entry<String, JsonElement> method : object.get("methods").getAsJsonObject().entrySet()) {
-                MappedMethod mappedMethod = gson.fromJson(method.getValue(), MappedMethod.class);
-                mappedMethod.setUnmappedName(method.getKey());
-                methods.add(mappedMethod);
+        } else {
+            MappedClass prevParent = null;
+            for (String parent : split) {
+                if (prevParent == null) {
+                    prevParent = this.getMappedClass(parent);
+                    if (prevParent == null) {
+                        return null;
+                    }
+                } else {
+                    MappedClass innerClass =  null;
+                    for (MappedClass inner : prevParent.getClasses()) {
+                        if (inner.getObf().equals(parent)) {
+                            innerClass = inner;
+                            break;
+                        }
+                    }
+                    if (innerClass == null) {
+                        return null;
+                    }
+                    prevParent = innerClass;
+                }
             }
-            this.methodMappings.put(entry.getKey(), methods);
+            return prevParent;
         }
+        return null;
     }
 
-    public Map<String, String> getClassMappings() {
-        Map<String, String> map = new HashMap<>();
-        for (Map.Entry<String, JsonObject> entry : this.classMappings.entrySet()) {
-            map.put(entry.getKey(), entry.getValue().get("name").getAsString());
+    public String getClassMapping(String obf) {
+        if (obf == null) {
+            return null;
         }
-        return map;
-    }
-
-    public boolean hasClassMappings(String cls) {
-        return this.classMappings.containsKey(cls);
-    }
-
-    public String getClassMapping(String cls) {
-        if (cls != null && this.hasClassMappings(cls)) {
-            return this.classMappings.get(cls).get("name").getAsString();
+        String[] split = obf.contains("$") ? obf.split("\\$") : null;
+        String name = "";
+        if (split == null) {
+            for (MappedClass mappedClass : this.classes) {
+                if (mappedClass.getObf().equals(obf)) {
+                    return mappedClass.getDeobf();
+                }
+            }
         } else {
-            return cls;
+            MappedClass prevParent = null;
+            for (String parent : split) {
+                if (prevParent == null) {
+                    prevParent = this.getMappedClass(parent);
+                    if (prevParent == null) {
+                        return obf;
+                    }
+                    name = prevParent.getDeobf();
+                } else {
+                    MappedClass innerClass =  null;
+                    for (MappedClass inner : prevParent.getClasses()) {
+                        if (inner.getObf().equals(parent)) {
+                            innerClass = inner;
+                            break;
+                        }
+                    }
+                    if (innerClass == null) {
+                        return obf;
+                    }
+                    name += "$" + innerClass.getDeobf();
+                    prevParent = innerClass;
+                }
+            }
+            return name;
         }
+        return obf;
     }
 
-    public List<MappedField> getFieldMappings(String cls) {
-        if (this.hasClassMappings(cls)) {
-            return this.fieldMappings.get(cls);
-        } else {
-            return new ArrayList<>();
-        }
-    }
-
-    public List<MappedMethod> getMethodMappings(String cls) {
-        if (this.hasClassMappings(cls)) {
-            return this.methodMappings.get(cls);
-        } else {
-            return new ArrayList<>();
-        }
-    }
-
-    public MappedMethod getMethodMapping(String cls, String method, String descriptor) {
-        for (MappedMethod mapping : this.getMethodMappings(cls)) {
-            if (mapping.getUnmappedName().equals(method) && mapping.getDescriptor().equals(descriptor)) {
-                return mapping;
+    public MappedMethod getMethodMapping(String owner, String name, String descriptor) {
+        MappedClass mapping = this.getMappedClass(owner);
+        if (mapping != null) {
+            for (MappedMethod method : mapping.getMethods()) {
+                if (method.getObf().equals(name) && method.getDescriptor().equals(descriptor)) {
+                    return method;
+                }
             }
         }
         return null;
     }
 
-    public MappedField getFieldMapping(String cls, String field, String descriptor) {
-        for (MappedField mapping : this.getFieldMappings(cls)) {
-            if (mapping.getUnmappedName().equals(field) && mapping.getDescriptor().equals(descriptor)) {
-                return mapping;
+    public MappedField getFieldMapping(String owner, String name, String descriptor) {
+        MappedClass mapping = this.getMappedClass(owner);
+        if (mapping != null) {
+            for (MappedField field : mapping.getFields()) {
+                if (field.getObf().equals(name) && field.getDescriptor().equals(descriptor)) {
+                    return field;
+                }
             }
         }
         return null;
     }
 
-    public String getMethodMappingName(String cls, String method, String descriptor) {
-        MappedMethod mapping = this.getMethodMapping(cls, method, descriptor);
-        return mapping != null ? mapping.getName() : method;
-    }
-
-    public String getFieldMappingName(String cls, String field, String descriptor) {
-        MappedField mapping = this.getFieldMapping(cls, field, descriptor);
-        return mapping != null ? mapping.getName() : field;
+    public MappedClass[] getClasses() {
+        return this.classes;
     }
 
     public String[] mapArray(String[] array) {
@@ -165,11 +187,17 @@ public class Mappings {
     }
 
     public String getParameterName(String owner, String name, String descriptor, int parameterIndex) {
-        MappedMethod method = this.getMethodMapping(owner, name, descriptor);
-        if (method != null) {
-            String[] parameters = method.getParameters();
-            if (parameters != null && parameterIndex >= 0 && parameterIndex < parameters.length) {
-                return parameters[parameterIndex];
+        if (parameterIndex >= 0) {
+            MappedMethod method = this.getMethodMapping(owner, name, descriptor);
+            if (method != null) {
+                MappedParameter[] parameters = method.getParameters();
+                if (parameters != null) {
+                    for (MappedParameter parameter : parameters) {
+                        if (parameter.getID() == parameterIndex) {
+                            return parameter.getDeobf();
+                        }
+                    }
+                }
             }
         }
         return null;
@@ -188,5 +216,48 @@ public class Mappings {
             return writer.toString();
         }
         return null;
+    }
+
+    public MappedField[] getFieldMappings(String obf) {
+        MappedClass mappedClass = this.getMappedClass(obf);
+        return mappedClass != null ? mappedClass.getFields() : new MappedField[0];
+    }
+
+    public MappedMethod[] getMethodMappings(String obf) {
+        MappedClass mappedClass = this.getMappedClass(obf);
+        return mappedClass != null ? mappedClass.getMethods() : new MappedMethod[0];
+    }
+
+    public String addNone(String obf) {
+        if (!obf.contains("/")) {
+            obf = "none/" + obf;
+        }
+        return obf;
+    }
+
+    public String addNoneDescriptor(String descriptor) {
+        if (descriptor == null) {
+            return null;
+        }
+        StringBuilder fixed = new StringBuilder();
+        StringBuilder clazz = null;
+        for (int i = 0; i < descriptor.length(); i++) {
+            char c = descriptor.charAt(i);
+            if (c == 'L' && clazz == null) {
+                clazz = new StringBuilder();
+            } else if (c == ';' && clazz != null) {
+                fixed.append('L');
+                fixed.append(this.addNone(clazz.toString()));
+                fixed.append(';');
+                clazz = null;
+            } else {
+                if (clazz == null) {
+                    fixed.append(c);
+                } else {
+                    clazz.append(c);
+                }
+            }
+        }
+        return fixed.toString();
     }
 }

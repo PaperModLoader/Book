@@ -1,11 +1,14 @@
 package xyz.papermodloader.book.converter.exporter;
 
-import com.google.gson.*;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import org.apache.commons.lang3.StringEscapeUtils;
-import xyz.papermodloader.book.mapping.enigma.ArgumentMapping;
-import xyz.papermodloader.book.mapping.enigma.ClassMapping;
-import xyz.papermodloader.book.mapping.enigma.FieldMapping;
-import xyz.papermodloader.book.mapping.enigma.MethodMapping;
+import xyz.papermodloader.book.mapping.enigma.EnigmaArgument;
+import xyz.papermodloader.book.mapping.enigma.EnigmaClass;
+import xyz.papermodloader.book.mapping.enigma.EnigmaField;
+import xyz.papermodloader.book.mapping.enigma.EnigmaMethod;
 import xyz.papermodloader.book.util.ProgressLogger;
 
 import java.io.*;
@@ -25,58 +28,67 @@ public class JSONExporter implements Exporter {
 
         this.logger = logger;
 
-        List<ClassMapping> mappings = new ArrayList<>();
-        List<ClassMapping> parents = new ArrayList<>();
-        ClassMapping lastClass = null;
-        MethodMapping lastMethod = null;
+        List<EnigmaClass> mappings = new ArrayList<>();
+        List<EnigmaClass> parents = new ArrayList<>();
+        EnigmaClass lastClass = null;
+        EnigmaMethod lastMethod = null;
 
+        int prevClassIndex = 0;
+        int total = 0;
         try (BufferedReader reader = new BufferedReader(new FileReader(input))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                if (line.contains("CLASS")) {
+                String trim = line.trim();
+                if (trim.startsWith("CLASS")) {
                     int index = line.indexOf("CLASS");
+                    total++;
                     if (index == 0) {
                         parents.clear();
                         String[] parts = line.split(" ");
                         String obf = parts[1].replace("none/", "");
-                        lastClass = new ClassMapping(obf, parts.length == 3 ? parts[2] : obf);
+                        lastClass = new EnigmaClass(obf, parts.length == 3 ? parts[2] : obf);
                         parents.add(lastClass);
                         mappings.add(lastClass);
                     } else {
+                        if (index <= prevClassIndex) {
+                            parents.remove(parents.size() - 1);
+                        }
                         String[] parts = line.split(" ");
                         String obf = parts[1].replace("none/", "");
-                        lastClass = new ClassMapping(obf, parts.length == 3 ? parts[2] : obf);
+                        lastClass = new EnigmaClass(obf, parts.length == 3 ? parts[2] : obf);
                         parents.get(index - 1).getInnerClasses().add(lastClass);
                         parents.add(lastClass);
                     }
-                } else if (line.startsWith("\tFIELD")) {
+                    prevClassIndex = index;
+                } else if (trim.startsWith("FIELD")) {
+                    int index = line.indexOf("FIELD");
                     String[] parts = line.split(" ");
-                    if (lastClass != null) {
-                        String obf = parts[3].replace("none/", "");
-                        lastClass.getFieldMappings().add(new FieldMapping(parts[1], parts[2], obf));
-                    }
-                } else if (line.startsWith("\tMETHOD")) {
+                    String obf = parts[3].replace("none/", "");
+                    parents.get(index - 1).getEnigmaFields().add(new EnigmaField(parts[1], parts[2], obf));
+                } else if (trim.startsWith("METHOD")) {
+                    int index = line.indexOf("METHOD");
                     String[] parts = line.split(" ");
                     if (parts.length == 3) {
                         String obf = parts[2].replace("none/", "");
-                        lastMethod = new MethodMapping(parts[1], parts[1], obf);
+                        lastMethod = new EnigmaMethod(parts[1], parts[1], obf);
                     } else {
                         String obf = parts[3].replace("none/", "");
-                        lastMethod = new MethodMapping(parts[1], parts[2], obf);
+                        lastMethod = new EnigmaMethod(parts[1], parts[2], obf);
                     }
-                    lastClass.getMethodMappings().add(lastMethod);
-                } else if (line.startsWith("\t\tARG")) {
+                    parents.get(index - 1).getEnigmaMethods().add(lastMethod);
+                } else if (trim.startsWith("ARG")) {
                     String[] parts = line.split(" ");
                     if (lastMethod != null) {
-                        lastMethod.getArgumentMappings().add(new ArgumentMapping(Integer.parseInt(parts[1]), parts[2]));
+                        lastMethod.getEnigmaArguments().add(new EnigmaArgument(Integer.parseInt(parts[1]), parts[2]));
                     }
                 }
             }
         }
+        System.out.println(total);
 
-        JsonObject root = new JsonObject();
+        JsonArray root = new JsonArray();
 
-        this.write(root, null, mappings);
+        this.write(root, mappings);
 
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
@@ -85,35 +97,46 @@ public class JSONExporter implements Exporter {
         out.close();
     }
 
-    private void write(JsonObject root, ClassMapping parent, List<ClassMapping> mappings) {
+    private void write(JsonArray root, List<EnigmaClass> mappings) {
         this.total += mappings.size();
-        for (ClassMapping mapping : mappings) {
-            this.logger.onProgress(this.current++, this.total);
+        for (EnigmaClass mapping : mappings) {
+            this.logger.onProgress(this.current++ + 1, this.total);
             JsonObject object = new JsonObject();
-            object.addProperty("name", (parent != null && !mapping.getObf().equals(mapping.getDeobf()) ? parent.getDeobf() + "$" : "") + mapping.getDeobf());
-            JsonObject fieldsObject = new JsonObject();
-            for (FieldMapping fieldMapping : mapping.getFieldMappings()) {
+            object.addProperty("obf", mapping.getObf().substring(mapping.getObf().lastIndexOf("$") + 1));
+            object.addProperty("deobf", mapping.getDeobf().substring(mapping.getDeobf().lastIndexOf("$") + 1));
+            object.addProperty("javadoc", "");
+            JsonArray fields = new JsonArray();
+            for (EnigmaField field : mapping.getEnigmaFields()) {
                 JsonObject fieldObject = new JsonObject();
-                fieldObject.addProperty("name", fieldMapping.getDeobf());
-                fieldObject.addProperty("descriptor", fieldMapping.getDescriptor());
-                fieldsObject.add(fieldMapping.getObf(), fieldObject);
+                fieldObject.addProperty("obf", field.getObf());
+                fieldObject.addProperty("deobf", field.getDeobf());
+                fieldObject.addProperty("desc", field.getDescriptor());
+                fieldObject.addProperty("javadoc", "");
+                fields.add(fieldObject);
             }
-            object.add("fields", fieldsObject);
-            JsonObject methodsObject = new JsonObject();
-            for (MethodMapping methodMapping : mapping.getMethodMappings()) {
+            object.add("fields", fields);
+            JsonArray methods = new JsonArray();
+            for (EnigmaMethod method : mapping.getEnigmaMethods()) {
                 JsonObject methodObject = new JsonObject();
-                methodObject.addProperty("name", methodMapping.getDeobf());
-                methodObject.addProperty("descriptor", methodMapping.getDescriptor());
-                JsonArray argumentsObject = new JsonArray();
-                for (ArgumentMapping argumentMapping : methodMapping.getArgumentMappings()) {
-                    argumentsObject.add(new JsonPrimitive(argumentMapping.getDeobf()));
+                methodObject.addProperty("obf", method.getObf());
+                methodObject.addProperty("deobf", method.getDeobf());
+                methodObject.addProperty("desc", method.getDescriptor());
+                methodObject.addProperty("javadoc", "");
+                JsonArray parameters = new JsonArray();
+                for (EnigmaArgument argument : method.getEnigmaArguments()) {
+                    JsonObject argumentObject = new JsonObject();
+                    argumentObject.addProperty("id", argument.getIndex());
+                    argumentObject.addProperty("deobf", argument.getDeobf());
+                    parameters.add(argumentObject);
                 }
-                methodObject.add("parameters", argumentsObject);
-                methodsObject.add(methodMapping.getObf(), methodObject);
+                methodObject.add("parameters", parameters);
+                methods.add(methodObject);
             }
-            object.add("methods", methodsObject);
-            this.write(root, mapping, mapping.getInnerClasses());
-            root.add(mapping.getObf(), object);
+            object.add("methods", methods);
+            JsonArray classes = new JsonArray();
+            this.write(classes, mapping.getInnerClasses());
+            object.add("classes", classes);
+            root.add(object);
         }
     }
 }

@@ -12,14 +12,14 @@ public class FieldMapping {
     }
 
     public String getObf() {
-        return obf;
+        return this.obf;
     }
 
     public String getDeobf() {
-        return deobf;
+        return this.deobf;
     }
 
     public String getDescriptor() {
-        return descriptor;
+        return this.descriptor;
     }
 }

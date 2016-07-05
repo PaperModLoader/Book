@@ -1,6 +1,8 @@
 package xyz.papermodloader.book.asm;
 
 import org.objectweb.asm.*;
+import xyz.papermodloader.book.mapping.MappedField;
+import xyz.papermodloader.book.mapping.MappedMethod;
 import xyz.papermodloader.book.mapping.Mappings;
 
 public class BookClassVisitor extends ClassVisitor {
@@ -22,7 +24,8 @@ public class BookClassVisitor extends ClassVisitor {
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-        MethodVisitor visitor = super.visitMethod(access, this.mappings.getMethodMappingName(this.obfName, name, descriptor), this.mappings.mapDescriptor(descriptor), this.mappings.mapSignature(signature, false, this.api), this.mappings.mapArray(exceptions));
+        MappedMethod methodMapping = this.mappings.getMethodMapping(this.obfName, name, descriptor);
+        MethodVisitor visitor = super.visitMethod(access, methodMapping != null ? methodMapping.getDeobf() : name, this.mappings.mapDescriptor(descriptor), this.mappings.mapSignature(signature, false, this.api), this.mappings.mapArray(exceptions));
         if (visitor != null) {
             return new MappingMethodVisitor(name, this.obfName, descriptor, this.mappings, this.api, visitor);
         }
@@ -31,7 +34,8 @@ public class BookClassVisitor extends ClassVisitor {
 
     @Override
     public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-        return super.visitField(access, this.mappings.getFieldMappingName(this.obfName, name, descriptor), this.mappings.mapDescriptor(descriptor), this.mappings.mapSignature(signature, true, this.api), value);
+        MappedField fieldMapping = this.mappings.getFieldMapping(this.obfName, name, descriptor);
+        return super.visitField(access, fieldMapping != null ? fieldMapping.getDeobf() : name, this.mappings.mapDescriptor(descriptor), this.mappings.mapSignature(signature, true, this.api), value);
     }
 
     @Override
@@ -42,7 +46,8 @@ public class BookClassVisitor extends ClassVisitor {
 
     @Override
     public void visitOuterClass(String owner, String name, String descriptor) {
-        super.visitOuterClass(this.mappings.getClassMapping(owner), this.mappings.getMethodMappingName(owner, name, descriptor), this.mappings.mapDescriptor(descriptor));
+        MappedMethod methodMapping = this.mappings.getMethodMapping(owner, name, descriptor);
+        super.visitOuterClass(this.mappings.getClassMapping(owner), methodMapping != null ? methodMapping.getDeobf() : name, this.mappings.mapDescriptor(descriptor));
     }
 
     @Override
@@ -57,7 +62,7 @@ public class BookClassVisitor extends ClassVisitor {
                         return;
                     } else if (value instanceof Handle) {
                         Handle handle = (Handle) value;
-                        super.visit(name, new Handle(handle.getTag(), BookClassVisitor.this.mappings.getClassMapping(handle.getOwner()), BookClassVisitor.this.mappings.getMethodMappingName(handle.getOwner(), handle.getName(), handle.getDesc()), BookClassVisitor.this.mappings.mapDescriptor(handle.getDesc()), handle.isInterface()));
+                        super.visit(name, new Handle(handle.getTag(), BookClassVisitor.this.mappings.getClassMapping(handle.getOwner()), BookClassVisitor.this.mappings.getMethodMapping(handle.getOwner(), handle.getName(), handle.getDesc()).getDeobf(), BookClassVisitor.this.mappings.mapDescriptor(handle.getDesc()), handle.isInterface()));
                         return;
                     }
                     super.visit(name, value);

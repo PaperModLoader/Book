@@ -41,7 +41,7 @@ public enum Book {
             throw new RuntimeException("Mappings don't exist!");
         }
 
-        Mappings mappings = new Mappings(new FileInputStream(mappingsFile));
+        Mappings mappings = Mappings.parseMappings(new FileInputStream(mappingsFile));
 
         long startTime = System.currentTimeMillis();
 
@@ -74,7 +74,7 @@ public enum Book {
                     classReader.accept(new BookClassVisitor(classNode, mappings, Opcodes.ASM5), 0);
                     ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
                     classNode.accept(writer);
-                    out.putNextEntry(new ZipEntry(mappings.getClassMapping(mappings.getClassMapping(name) + ".class")));
+                    out.putNextEntry(new ZipEntry(mappings.getClassMapping(name) + ".class"));
                     out.write(writer.toByteArray());
                     out.closeEntry();
                 }

@@ -1,23 +1,32 @@
 package xyz.papermodloader.book.mapping;
 
-import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 public class MappedField {
-    private String unmappedName;
-    private String name;
+    private JsonObject object;
+    private String obf;
+    private String deobf;
     private String descriptor;
     private String javadoc;
 
-    public void setUnmappedName(String unmappedName) {
-        this.unmappedName = unmappedName;
+    public MappedField(JsonObject object) {
+        this.object = object;
+        this.obf = this.object.get("obf").getAsString();
+        this.deobf = this.object.get("deobf").getAsString();
+        this.descriptor = this.object.get("desc").getAsString();
+        this.javadoc = this.object.get("javadoc").getAsString();
     }
 
-    public String getUnmappedName() {
-        return this.unmappedName;
+    public JsonObject getObject() {
+        return this.object;
     }
 
-    public String getName() {
-        return this.name;
+    public String getObf() {
+        return this.obf;
+    }
+
+    public String getDeobf() {
+        return this.deobf;
     }
 
     public String getDescriptor() {
@@ -26,10 +35,5 @@ public class MappedField {
 
     public String getJavadoc() {
         return this.javadoc;
-    }
-
-    @Override
-    public String toString() {
-        return "MappedField" + new Gson().toJson(this);
     }
 }

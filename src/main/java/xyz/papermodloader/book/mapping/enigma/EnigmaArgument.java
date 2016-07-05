@@ -1,10 +1,10 @@
 package xyz.papermodloader.book.mapping.enigma;
 
-public class ArgumentMapping {
+public class EnigmaArgument {
     private int index;
     private String deobf;
 
-    public ArgumentMapping(int index, String deobf) {
+    public EnigmaArgument(int index, String deobf) {
         this.index = index;
         this.deobf = deobf;
     }

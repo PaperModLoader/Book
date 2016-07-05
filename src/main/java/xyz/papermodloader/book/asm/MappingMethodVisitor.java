@@ -4,6 +4,8 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
+import xyz.papermodloader.book.mapping.MappedField;
+import xyz.papermodloader.book.mapping.MappedMethod;
 import xyz.papermodloader.book.mapping.Mappings;
 import xyz.papermodloader.book.util.DefaultedHashMap;
 
@@ -41,12 +43,14 @@ public class MappingMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitFieldInsn(int opcode, String owner, String name, String descriptor) {
-        super.visitFieldInsn(opcode, this.mappings.getClassMapping(owner), this.mappings.getFieldMappingName(owner, name, descriptor), this.mappings.mapDescriptor(descriptor));
+        MappedField fieldMapping = this.mappings.getFieldMapping(owner, name, descriptor);
+        super.visitFieldInsn(opcode, this.mappings.getClassMapping(owner), fieldMapping != null ? fieldMapping.getDeobf() : name, this.mappings.mapDescriptor(descriptor));
     }
 
     @Override
     public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
-        super.visitMethodInsn(opcode, this.mappings.getClassMapping(owner), this.mappings.getMethodMappingName(owner, name, descriptor), this.mappings.mapDescriptor(descriptor), isInterface);
+        MappedMethod methodMapping = this.mappings.getMethodMapping(owner, name, descriptor);
+        super.visitMethodInsn(opcode, this.mappings.getClassMapping(owner), methodMapping != null ? methodMapping.getDeobf() : name, this.mappings.mapDescriptor(descriptor), isInterface);
     }
 
     @Override
@@ -61,7 +65,7 @@ public class MappingMethodVisitor extends MethodVisitor {
             return;
         } else if (cst instanceof Handle) {
             Handle handle = (Handle) cst;
-            super.visitLdcInsn(new Handle(handle.getTag(), this.mappings.getClassMapping(handle.getOwner()), this.mappings.getMethodMappingName(handle.getOwner(), handle.getName(), handle.getDesc()), this.mappings.mapDescriptor(handle.getDesc()), handle.isInterface()));
+            super.visitLdcInsn(new Handle(handle.getTag(), this.mappings.getClassMapping(handle.getOwner()), this.mappings.getMethodMapping(handle.getOwner(), handle.getName(), handle.getDesc()).getDeobf(), this.mappings.mapDescriptor(handle.getDesc()), handle.isInterface()));
             return;
         }
         super.visitLdcInsn(cst);

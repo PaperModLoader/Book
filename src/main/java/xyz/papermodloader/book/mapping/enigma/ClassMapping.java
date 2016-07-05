@@ -16,22 +16,22 @@ public class ClassMapping {
     }
 
     public String getObf() {
-        return obf;
+        return this.obf;
     }
 
     public String getDeobf() {
-        return deobf;
+        return this.deobf;
     }
 
     public List<FieldMapping> getFieldMappings() {
-        return fieldMappings;
+        return this.fieldMappings;
     }
 
     public List<MethodMapping> getMethodMappings() {
-        return methodMappings;
+        return this.methodMappings;
     }
 
     public List<ClassMapping> getInnerClasses() {
-        return innerClasses;
+        return this.innerClasses;
     }
 }
