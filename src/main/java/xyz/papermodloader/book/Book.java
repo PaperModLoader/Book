@@ -7,6 +7,8 @@ import org.objectweb.asm.tree.ClassNode;
 import xyz.papermodloader.book.asm.BookClassVisitor;
 import xyz.papermodloader.book.mapping.Mappings;
 import xyz.papermodloader.book.util.Arguments;
+import xyz.papermodloader.book.util.ConsoleProgressLogger;
+import xyz.papermodloader.book.util.ProgressLogger;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -46,7 +48,7 @@ public enum Book {
         long startTime = System.currentTimeMillis();
 
         try {
-            Book.INSTANCE.map(mappings, inputFile, outputFile);
+            Book.INSTANCE.map(mappings, inputFile, outputFile, new ConsoleProgressLogger());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -54,7 +56,9 @@ public enum Book {
         System.out.println("Mapped jar in " + (System.currentTimeMillis() - startTime) + " millis!");
     }
 
-    public void map(Mappings mappings, File input, File output) throws IOException {
+    public void map(Mappings mappings, File input, File output, ProgressLogger logger) throws IOException {
+        int total = 0;
+        int progress = 0;
         ZipFile inputZip = new ZipFile(input);
         if (!output.exists()) {
             if (!output.getParentFile().exists()) {
@@ -68,6 +72,14 @@ public enum Book {
             ZipEntry entry = entries.nextElement();
             if (!entry.isDirectory()) {
                 if (entry.getName().endsWith(".class")) {
+                    total++;
+                }
+            }
+        }
+        while (entries.hasMoreElements()) {
+            ZipEntry entry = entries.nextElement();
+            if (!entry.isDirectory()) {
+                if (entry.getName().endsWith(".class")) {
                     String name = entry.getName().substring(0, entry.getName().length() - ".class".length());
                     ClassReader classReader = new ClassReader(inputZip.getInputStream(entry));
                     ClassNode classNode = new ClassNode();
@@ -77,6 +89,7 @@ public enum Book {
                     out.putNextEntry(new ZipEntry(mappings.getClassMapping(name) + ".class"));
                     out.write(writer.toByteArray());
                     out.closeEntry();
+                    logger.onProgress(progress++, total);
                 }
             }
         }
