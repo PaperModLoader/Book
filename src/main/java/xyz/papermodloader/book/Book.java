@@ -7,12 +7,16 @@ import org.objectweb.asm.tree.ClassNode;
 import xyz.papermodloader.book.asm.BookClassVisitor;
 import xyz.papermodloader.book.mapping.Mappings;
 import xyz.papermodloader.book.util.Arguments;
+import xyz.papermodloader.book.util.ConsoleProgressLogger;
+import xyz.papermodloader.book.util.ProgressLogger;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Enumeration;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -46,7 +50,7 @@ public enum Book {
         long startTime = System.currentTimeMillis();
 
         try {
-            Book.INSTANCE.map(mappings, inputFile, outputFile);
+            Book.INSTANCE.map(mappings, inputFile, outputFile, new ConsoleProgressLogger());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -54,7 +58,9 @@ public enum Book {
         System.out.println("Mapped jar in " + (System.currentTimeMillis() - startTime) + " millis!");
     }
 
-    public void map(Mappings mappings, File input, File output) throws IOException {
+    public void map(Mappings mappings, File input, File output, ProgressLogger logger) throws IOException {
+        int total = 0;
+        int progress = 0;
         ZipFile inputZip = new ZipFile(input);
         if (!output.exists()) {
             if (!output.getParentFile().exists()) {
@@ -64,21 +70,27 @@ public enum Book {
         }
         ZipOutputStream out = new ZipOutputStream(new FileOutputStream(output));
         Enumeration<? extends ZipEntry> entries = inputZip.entries();
+        List<ZipEntry> process = new LinkedList<>();
         while (entries.hasMoreElements()) {
             ZipEntry entry = entries.nextElement();
             if (!entry.isDirectory()) {
                 if (entry.getName().endsWith(".class")) {
-                    String name = entry.getName().substring(0, entry.getName().length() - ".class".length());
-                    ClassReader classReader = new ClassReader(inputZip.getInputStream(entry));
-                    ClassNode classNode = new ClassNode();
-                    classReader.accept(new BookClassVisitor(classNode, mappings, Opcodes.ASM5), 0);
-                    ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-                    classNode.accept(writer);
-                    out.putNextEntry(new ZipEntry(mappings.getClassMapping(name) + ".class"));
-                    out.write(writer.toByteArray());
-                    out.closeEntry();
+                    process.add(entry);
+                    total++;
                 }
             }
+        }
+        for(ZipEntry entry : process) {
+            String name = entry.getName().substring(0, entry.getName().length() - ".class".length());
+            ClassReader classReader = new ClassReader(inputZip.getInputStream(entry));
+            ClassNode classNode = new ClassNode();
+            classReader.accept(new BookClassVisitor(classNode, mappings, Opcodes.ASM5), 0);
+            ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            classNode.accept(writer);
+            out.putNextEntry(new ZipEntry(mappings.getClassMapping(name) + ".class"));
+            out.write(writer.toByteArray());
+            out.closeEntry();
+            logger.onProgress(progress++, total);
         }
         inputZip.close();
         out.close();
