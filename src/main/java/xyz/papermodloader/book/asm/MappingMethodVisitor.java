@@ -81,7 +81,7 @@ public class MappingMethodVisitor extends MethodVisitor {
     public void visitLocalVariable(String name, String descriptor, String signature, Label start, Label end, int index) {
         descriptor = this.mappings.mapDescriptor(descriptor);
         if (!name.equals("this")) {
-            String mappedParameterName = this.mappings.getParameterName(this.owner, this.name, this.descriptor, index - 1);
+            String mappedParameterName = this.mappings.getParameterName(this.owner, this.name, this.descriptor, index);
             if (mappedParameterName == null) {
                 String className = Type.getType(descriptor).getClassName();
                 switch (className) {
