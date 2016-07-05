@@ -4,7 +4,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
-import xyz.papermodloader.book.mapping.asm.BookClassVisitor;
+import xyz.papermodloader.book.asm.BookClassVisitor;
 import xyz.papermodloader.book.mapping.Mappings;
 import xyz.papermodloader.book.util.Arguments;
 

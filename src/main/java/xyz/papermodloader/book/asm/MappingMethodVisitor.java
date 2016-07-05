@@ -1,4 +1,4 @@
-package xyz.papermodloader.book.mapping.asm;
+package xyz.papermodloader.book.asm;
 
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;

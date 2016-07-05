@@ -1,4 +1,4 @@
-package xyz.papermodloader.book.converter.enigma;
+package xyz.papermodloader.book.mapping.enigma;
 
 public class FieldMapping {
     private String obf;

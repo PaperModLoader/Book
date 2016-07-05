@@ -1,4 +1,4 @@
-package xyz.papermodloader.book.converter.enigma;
+package xyz.papermodloader.book.mapping.enigma;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -8,7 +8,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.signature.SignatureReader;
 import org.objectweb.asm.signature.SignatureVisitor;
 import org.objectweb.asm.signature.SignatureWriter;
-import xyz.papermodloader.book.mapping.asm.MappingSignatureVisitor;
+import xyz.papermodloader.book.asm.MappingSignatureVisitor;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -47,6 +47,14 @@ public class Mappings {
             }
             this.methodMappings.put(entry.getKey(), methods);
         }
+    }
+
+    public Map<String, String> getClassMappings() {
+        Map<String, String> map = new HashMap<>();
+        for (Map.Entry<String, JsonObject> entry : this.classMappings.entrySet()) {
+            map.put(entry.getKey(), entry.getValue().get("name").getAsString());
+        }
+        return map;
     }
 
     public boolean hasClassMappings(String cls) {
