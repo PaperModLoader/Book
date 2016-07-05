@@ -130,9 +130,9 @@ public class Mappings {
         StringBuilder clazz = null;
         for (int i = 0; i < descriptor.length(); i++) {
             char c = descriptor.charAt(i);
-            if (c == 'L') {
+            if (c == 'L' && clazz == null) {
                 clazz = new StringBuilder();
-            } else if (c == ';') {
+            } else if (c == ';' && clazz != null) {
                 mapped.append('L');
                 mapped.append(this.getClassMapping(clazz.toString()));
                 mapped.append(';');
@@ -168,7 +168,7 @@ public class Mappings {
         MappedMethod method = this.getMethodMapping(owner, name, descriptor);
         if (method != null) {
             String[] parameters = method.getParameters();
-            if (parameters != null && parameterIndex < parameters.length) {
+            if (parameters != null && parameterIndex >= 0 && parameterIndex < parameters.length) {
                 return parameters[parameterIndex];
             }
         }

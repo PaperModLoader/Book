@@ -80,43 +80,49 @@ public class MappingMethodVisitor extends MethodVisitor {
     @Override
     public void visitLocalVariable(String name, String descriptor, String signature, Label start, Label end, int index) {
         descriptor = this.mappings.mapDescriptor(descriptor);
-        String mappedParameterName = this.mappings.getParameterName(this.owner, this.name, this.descriptor, index);
-        if (mappedParameterName == null && !name.equals("this")) {
-            String className = Type.getType(descriptor).getClassName();
-            switch (className) {
-                case "boolean":
-                    className = "z";
-                    break;
-                case "char":
-                    className = "c";
-                    break;
-                case "byte":
-                    className = "b";
-                    break;
-                case "short":
-                    className = "s";
-                    break;
-                case "int":
-                    className = "i";
-                    break;
-                case "float":
-                    className = "f";
-                    break;
-                case "long":
-                    className = "l";
-                    break;
-                case "double":
-                    className = "d";
-                    break;
+        if (!name.equals("this")) {
+            String mappedParameterName = this.mappings.getParameterName(this.owner, this.name, this.descriptor, index - 1);
+            if (mappedParameterName == null) {
+                String className = Type.getType(descriptor).getClassName();
+                switch (className) {
+                    case "boolean":
+                        className = "z";
+                        break;
+                    case "char":
+                        className = "c";
+                        break;
+                    case "byte":
+                        className = "b";
+                        break;
+                    case "short":
+                        className = "s";
+                        break;
+                    case "int":
+                        className = "i";
+                        break;
+                    case "float":
+                        className = "f";
+                        break;
+                    case "long":
+                        className = "l";
+                        break;
+                    case "double":
+                        className = "d";
+                        break;
+                }
+                if (className.endsWith("[]")) {
+                    className = className.replaceAll("\\[\\]", "Array");
+                }
+                if (className.length() > 0) {
+                    name = (className.contains(".") ? className.substring(className.lastIndexOf('.') + 1) : className);
+                    int variableIndex = this.variableIndex.get(name);
+                    name = Character.toLowerCase(name.charAt(0)) + name.substring(1);
+                    this.variableIndex.put(name, variableIndex + 1);
+                    name += (variableIndex == 0 ? "" : variableIndex);
+                }
+            } else {
+                name = mappedParameterName;
             }
-            if (className.length() > 0) {
-                name = (className.contains(".") ? className.substring(className.lastIndexOf('.') + 1) : className);
-                int variableIndex = this.variableIndex.get(name);
-                name = Character.toLowerCase(name.charAt(0)) + name.substring(1) + (variableIndex == 0 ? "" : variableIndex);
-                this.variableIndex.put(name, variableIndex + 1);
-            }
-        } else if (mappedParameterName != null) {
-            name = mappedParameterName;
         }
         super.visitLocalVariable(name, descriptor, this.mappings.mapSignature(signature, true, this.api), start, end, index);
     }
