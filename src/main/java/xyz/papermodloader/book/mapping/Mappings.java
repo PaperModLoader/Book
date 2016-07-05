@@ -2,11 +2,12 @@ package xyz.papermodloader.book.mapping;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.signature.SignatureReader;
 import org.objectweb.asm.signature.SignatureVisitor;
 import org.objectweb.asm.signature.SignatureWriter;
-import xyz.papermodloader.book.asm.MappingSignatureVisitor;
+import xyz.papermodloader.book.asm.BookSignatureVisitor;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -69,6 +70,13 @@ public class Mappings {
     public String getClassMapping(String obf) {
         if (obf == null) {
             return null;
+        }
+        Type type = Type.getObjectType(obf);
+        if (type.getSort() == Type.ARRAY) {
+            obf = this.mapDescriptor(type.getElementType().getDescriptor());
+            for (int i = 0; i < type.getDimensions(); i++) {
+                obf = '[' + obf;
+            }
         }
         String[] split = obf.contains("$") ? obf.split("\\$") : null;
         String name = "";
@@ -207,7 +215,7 @@ public class Mappings {
         if (signature != null) {
             SignatureReader reader = new SignatureReader(signature);
             final SignatureWriter writer = new SignatureWriter();
-            SignatureVisitor visitor = new MappingSignatureVisitor(api, writer, this);
+            SignatureVisitor visitor = new BookSignatureVisitor(api, writer, this);
             if (isType) {
                 reader.acceptType(visitor);
             } else {
@@ -259,5 +267,15 @@ public class Mappings {
             }
         }
         return fixed.toString();
+    }
+
+    public Object mapValue(Object cst) {
+        if (cst instanceof Type) {
+            return this.mapType((Type) cst);
+        } else if (cst instanceof Handle) {
+            Handle handle = (Handle) cst;
+            return new Handle(handle.getTag(), this.getClassMapping(handle.getOwner()), this.getMethodMapping(handle.getOwner(), handle.getName(), handle.getDesc()).getDeobf(), this.mapDescriptor(handle.getDesc()), handle.isInterface());
+        }
+        return cst;
     }
 }

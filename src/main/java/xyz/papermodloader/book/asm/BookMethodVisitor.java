@@ -4,6 +4,7 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.Remapper;
 import xyz.papermodloader.book.mapping.MappedField;
 import xyz.papermodloader.book.mapping.MappedMethod;
 import xyz.papermodloader.book.mapping.Mappings;
@@ -11,7 +12,7 @@ import xyz.papermodloader.book.util.DefaultedHashMap;
 
 import java.util.Map;
 
-public class MappingMethodVisitor extends MethodVisitor {
+public class BookMethodVisitor extends MethodVisitor {
     private Mappings mappings;
 
     private String name;
@@ -20,7 +21,7 @@ public class MappingMethodVisitor extends MethodVisitor {
 
     private Map<String, Integer> variableIndex = new DefaultedHashMap<>(0);
 
-    public MappingMethodVisitor(String name, String owner, String descriptor, Mappings mappings, int api, MethodVisitor visitor) {
+    public BookMethodVisitor(String name, String owner, String descriptor, Mappings mappings, int api, MethodVisitor visitor) {
         super(api, visitor);
         this.name = name;
         this.owner = owner;
@@ -60,15 +61,7 @@ public class MappingMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitLdcInsn(Object cst) {
-        if (cst instanceof Type) {
-            super.visitLdcInsn(this.mappings.mapType((Type) cst));
-            return;
-        } else if (cst instanceof Handle) {
-            Handle handle = (Handle) cst;
-            super.visitLdcInsn(new Handle(handle.getTag(), this.mappings.getClassMapping(handle.getOwner()), this.mappings.getMethodMapping(handle.getOwner(), handle.getName(), handle.getDesc()).getDeobf(), this.mappings.mapDescriptor(handle.getDesc()), handle.isInterface()));
-            return;
-        }
-        super.visitLdcInsn(cst);
+        super.visitLdcInsn(this.mappings.mapValue(cst));
     }
 
     @Override
@@ -79,6 +72,11 @@ public class MappingMethodVisitor extends MethodVisitor {
     @Override
     public void visitTryCatchBlock(Label start, Label end, Label handler, String type) {
         super.visitTryCatchBlock(start, end, handler, this.mappings.getClassMapping(type));
+    }
+
+    @Override
+    public void visitInvokeDynamicInsn(String name, String descriptor, Handle bsm, Object... bsmArgs) {
+        super.visitInvokeDynamicInsn(name, this.mappings.mapDescriptor(descriptor), (Handle) this.mappings.mapValue(bsm), bsmArgs);
     }
 
     @Override

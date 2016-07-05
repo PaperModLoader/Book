@@ -5,13 +5,13 @@ import xyz.papermodloader.book.mapping.Mappings;
 
 import java.util.Stack;
 
-public class MappingSignatureVisitor extends SignatureVisitor {
+public class BookSignatureVisitor extends SignatureVisitor {
     private SignatureVisitor visitor;
     private Mappings mappings;
 
     private Stack<String> classes = new Stack<>();
 
-    public MappingSignatureVisitor(int api, SignatureVisitor visitor, Mappings mappings) {
+    public BookSignatureVisitor(int api, SignatureVisitor visitor, Mappings mappings) {
         super(api);
         this.visitor = visitor;
         this.mappings = mappings;
