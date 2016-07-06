@@ -109,7 +109,8 @@ public class Mappings {
                 if (prevParent == null) {
                     prevParent = this.getMappedClass(parent);
                     if (prevParent == null) {
-                        return obf;
+                        int index = obf.lastIndexOf('$') + 1;
+                        return obf.substring(0, index) + "Inner" + obf.substring(index);
                     }
                     name = prevParent.getDeobf();
                 } else {
