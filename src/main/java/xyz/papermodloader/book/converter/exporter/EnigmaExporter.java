@@ -4,6 +4,7 @@ import xyz.papermodloader.book.mapping.*;
 import xyz.papermodloader.book.util.ProgressLogger;
 
 import java.io.*;
+import java.util.Map;
 
 public class EnigmaExporter implements Exporter {
     private ProgressLogger logger;
@@ -24,10 +25,10 @@ public class EnigmaExporter implements Exporter {
 
         PrintWriter out = new PrintWriter(output);
 
-        MappedClass[] classes = mappings.getClasses();
-        this.total = classes.length;
-        for (MappedClass mappedClass : classes) {
-            this.write(out, mappedClass, mappings, "", "", 0);
+        Map<String, MappedClass> classes = mappings.getClasses();
+        this.total = classes.size();
+        for (Map.Entry<String, MappedClass> mappedClass : classes.entrySet()) {
+            this.write(out, mappedClass.getValue(), mappings, "", "", 0);
         }
         out.close();
     }

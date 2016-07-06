@@ -20,12 +20,15 @@ import java.util.List;
 import java.util.Map;
 
 public class Mappings {
-    private MappedClass[] classes;
+    private Map<String, MappedClass> classes;
     private Map<String, List<String>> inheritance;
     private Map<String, ClassNode> classNodes;
 
     private Mappings(MappedClass[] classes) {
-        this.classes = classes;
+        this.classes = new HashMap<>();
+        for (MappedClass mappedClass : classes) {
+            this.classes.put(mappedClass.getObf(), mappedClass);
+        }
     }
 
     public void setInheritance(Map<String, List<String>> inheritance) {
@@ -50,13 +53,16 @@ public class Mappings {
         if (obf == null) {
             return null;
         }
+        Type type = Type.getObjectType(obf);
+        if (type.getSort() == Type.ARRAY) {
+            if (obf.endsWith(";")) {
+                obf = type.getElementType().getDescriptor();
+                obf = obf.substring(1, obf.length() - 1);
+            }
+        }
         String[] split = obf.contains("$") ? obf.split("\\$") : null;
         if (split == null) {
-            for (MappedClass mappedClass : this.classes) {
-                if (mappedClass.getObf().equals(obf)) {
-                    return mappedClass;
-                }
-            }
+            return this.classes.get(obf);
         } else {
             MappedClass prevParent = null;
             for (String parent : split) {
@@ -66,7 +72,7 @@ public class Mappings {
                         return null;
                     }
                 } else {
-                    MappedClass innerClass =  null;
+                    MappedClass innerClass = null;
                     for (MappedClass inner : prevParent.getClasses()) {
                         if (inner.getObf().equals(parent)) {
                             innerClass = inner;
@@ -81,27 +87,27 @@ public class Mappings {
             }
             return prevParent;
         }
-        return null;
     }
 
     public String getClassMapping(String obf) {
         if (obf == null) {
             return null;
         }
+        int dimensions = 0;
         Type type = Type.getObjectType(obf);
         if (type.getSort() == Type.ARRAY) {
-            obf = this.mapDescriptor(type.getElementType().getDescriptor());
-            for (int i = 0; i < type.getDimensions(); i++) {
-                obf = '[' + obf;
+            if (obf.endsWith(";")) {
+                obf = type.getElementType().getDescriptor();
+                obf = obf.substring(1, obf.length() - 1);
+                dimensions = type.getDimensions();
             }
         }
         String[] split = obf.contains("$") ? obf.split("\\$") : null;
-        String name = "";
+        String mapping = obf;
         if (split == null) {
-            for (MappedClass mappedClass : this.classes) {
-                if (mappedClass.getObf().equals(obf)) {
-                    return mappedClass.getDeobf();
-                }
+            MappedClass mappedClass = this.getMappedClass(obf);
+            if (mappedClass != null) {
+                return mappedClass.getDeobf();
             }
         } else {
             MappedClass prevParent = null;
@@ -110,11 +116,12 @@ public class Mappings {
                     prevParent = this.getMappedClass(parent);
                     if (prevParent == null) {
                         int index = obf.lastIndexOf('$') + 1;
-                        return obf.substring(0, index) + "Inner" + obf.substring(index);
+                        mapping = obf.substring(0, index) + "Inner" + obf.substring(index);
+                        break;
                     }
-                    name = prevParent.getDeobf();
+                    mapping = prevParent.getDeobf();
                 } else {
-                    MappedClass innerClass =  null;
+                    MappedClass innerClass = null;
                     for (MappedClass inner : prevParent.getClasses()) {
                         if (inner.getObf().equals(parent)) {
                             innerClass = inner;
@@ -122,15 +129,21 @@ public class Mappings {
                         }
                     }
                     if (innerClass == null) {
-                        return obf;
+                        mapping = obf;
+                        break;
                     }
-                    name += "$" + innerClass.getDeobf();
+                    mapping += "$" + innerClass.getDeobf();
                     prevParent = innerClass;
                 }
             }
-            return name;
         }
-        return obf;
+        if (dimensions > 0) {
+            mapping = "L" + mapping + ";";
+            for (int i = 0; i < dimensions; i++) {
+                mapping = '[' + mapping;
+            }
+        }
+        return mapping;
     }
 
     public MappedMethod getMethodMapping(String owner, String name, String descriptor) {
@@ -201,7 +214,7 @@ public class Mappings {
         return null;
     }
 
-    public MappedClass[] getClasses() {
+    public Map<String, MappedClass> getClasses() {
         return this.classes;
     }
 
