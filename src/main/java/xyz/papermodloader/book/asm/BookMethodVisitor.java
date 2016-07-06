@@ -114,6 +114,9 @@ public class BookMethodVisitor extends MethodVisitor {
                     case "double":
                         className = "d";
                         break;
+                    case "java.lang.Class":
+                        className = "cls";
+                        break;
                 }
                 if (className.endsWith("[]")) {
                     className = className.replaceAll("\\[\\]", "Array");
