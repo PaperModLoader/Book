@@ -167,7 +167,7 @@ public class Mappings {
     }
 
     public MappedField getFieldMapping(String owner, String name, String descriptor) {
-        return this.getFieldMapping(owner, name, descriptor, this.getAccess(false, owner, name, descriptor));
+        return this.getFieldMapping(owner, name, descriptor, this.getAccess(true, owner, name, descriptor));
     }
 
     public MappedField getFieldMapping(String owner, String name, String descriptor, int access) {
