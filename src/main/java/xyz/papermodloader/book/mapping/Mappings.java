@@ -7,16 +7,33 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.signature.SignatureReader;
 import org.objectweb.asm.signature.SignatureVisitor;
 import org.objectweb.asm.signature.SignatureWriter;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.MethodNode;
 import xyz.papermodloader.book.asm.BookSignatureVisitor;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Modifier;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Mappings {
     private MappedClass[] classes;
+    private Map<String, List<String>> inheritance;
+    private Map<String, ClassNode> classNodes;
 
     private Mappings(MappedClass[] classes) {
         this.classes = classes;
+    }
+
+    public void setInheritance(Map<String, List<String>> inheritance) {
+        this.inheritance = inheritance;
+    }
+
+    public void setClassNodes(Map<String, ClassNode> classes) {
+        this.classNodes = classes;
     }
 
     public static Mappings parseMappings(InputStream stream) {
@@ -116,24 +133,68 @@ public class Mappings {
     }
 
     public MappedMethod getMethodMapping(String owner, String name, String descriptor) {
+        return this.getMethodMapping(owner, name, descriptor, this.getAccess(false, owner, name, descriptor));
+    }
+
+    public MappedMethod getMethodMapping(String owner, String name, String descriptor, int access) {
         MappedClass mapping = this.getMappedClass(owner);
         if (mapping != null) {
-            for (MappedMethod method : mapping.getMethods()) {
-                if (method.getObf().equals(name) && method.getDescriptor().equals(descriptor)) {
-                    return method;
+            MappedMethod method = this.getMethodMapping(name, descriptor, mapping);
+            if (method != null) {
+                return method;
+            } else if (access == -1 || !(Modifier.isPrivate(access) || Modifier.isStatic(access))) {
+                List<String> parents = this.inheritance.get(owner);
+                if (parents != null) {
+                    for (String parent : parents) {
+                        method = this.getMethodMapping(parent, name, descriptor, access);
+                        if (method != null) {
+                            return method;
+                        }
+                    }
                 }
             }
         }
         return null;
     }
 
+    public MappedMethod getMethodMapping(String name, String descriptor, MappedClass mapping) {
+        for (MappedMethod method : mapping.getMethods()) {
+            if (method.getObf().equals(name) && method.getDescriptor().equals(descriptor)) {
+                return method;
+            }
+        }
+        return null;
+    }
+
     public MappedField getFieldMapping(String owner, String name, String descriptor) {
+        return this.getFieldMapping(owner, name, descriptor, this.getAccess(false, owner, name, descriptor));
+    }
+
+    public MappedField getFieldMapping(String owner, String name, String descriptor, int access) {
         MappedClass mapping = this.getMappedClass(owner);
         if (mapping != null) {
-            for (MappedField field : mapping.getFields()) {
-                if (field.getObf().equals(name) && field.getDescriptor().equals(descriptor)) {
-                    return field;
+            MappedField field = this.getFieldMapping(name, descriptor, mapping);
+            if (field != null) {
+                return field;
+            } else if (access == -1 || !(Modifier.isPrivate(access) || Modifier.isStatic(access))) {
+                List<String> parents = this.inheritance.get(owner);
+                if (parents != null) {
+                    for (String parent : parents) {
+                        field = this.getFieldMapping(parent, name, descriptor, access);
+                        if (field != null) {
+                            return field;
+                        }
+                    }
                 }
+            }
+        }
+        return null;
+    }
+
+    public MappedField getFieldMapping(String name, String descriptor, MappedClass mapping) {
+        for (MappedField field : mapping.getFields()) {
+            if (field.getObf().equals(name) && field.getDescriptor().equals(descriptor)) {
+                return field;
             }
         }
         return null;
@@ -194,9 +255,9 @@ public class Mappings {
         return type;
     }
 
-    public String getParameterName(String owner, String name, String descriptor, int parameterIndex) {
+    public String getParameterName(String owner, String name, String descriptor, int parameterIndex, int access) {
         if (parameterIndex >= 0) {
-            MappedMethod method = this.getMethodMapping(owner, name, descriptor);
+            MappedMethod method = this.getMethodMapping(owner, name, descriptor, access);
             if (method != null) {
                 MappedParameter[] parameters = method.getParameters();
                 if (parameters != null) {
@@ -269,13 +330,33 @@ public class Mappings {
         return fixed.toString();
     }
 
-    public Object mapValue(Object cst) {
+    public Object mapValue(Object cst, int access) {
         if (cst instanceof Type) {
             return this.mapType((Type) cst);
         } else if (cst instanceof Handle) {
             Handle handle = (Handle) cst;
-            return new Handle(handle.getTag(), this.getClassMapping(handle.getOwner()), this.getMethodMapping(handle.getOwner(), handle.getName(), handle.getDesc()).getDeobf(), this.mapDescriptor(handle.getDesc()), handle.isInterface());
+            return new Handle(handle.getTag(), this.getClassMapping(handle.getOwner()), this.getMethodMapping(handle.getOwner(), handle.getName(), handle.getDesc(), access).getDeobf(), this.mapDescriptor(handle.getDesc()), handle.isInterface());
         }
         return cst;
+    }
+
+    public int getAccess(boolean field, String owner, String name, String descriptor) {
+        ClassNode classNode = this.classNodes.get(owner);
+        if (classNode != null) {
+            if (field) {
+                for (FieldNode fieldNode : classNode.fields) {
+                    if (fieldNode.name.equals(name) && fieldNode.desc.equals(descriptor)) {
+                        return fieldNode.access;
+                    }
+                }
+            } else {
+                for (MethodNode methodNode : classNode.methods) {
+                    if (methodNode.name.equals(name) && methodNode.desc.equals(descriptor)) {
+                        return methodNode.access;
+                    }
+                }
+            }
+        }
+        return -1;
     }
 }

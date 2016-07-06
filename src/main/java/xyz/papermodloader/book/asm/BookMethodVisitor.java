@@ -35,6 +35,9 @@ public class BookMethodVisitor extends MethodVisitor {
     }
 
     private Object[] mapFrame(Object[] array, int count) {
+        if (array == null) {
+            return null;
+        }
         for (int i = 0; i < count; i++) {
             Object object = array[i];
             array[i] = object instanceof String ? this.mappings.getClassMapping((String) object) : object;
@@ -61,7 +64,7 @@ public class BookMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitLdcInsn(Object cst) {
-        super.visitLdcInsn(this.mappings.mapValue(cst));
+        super.visitLdcInsn(this.mappings.mapValue(cst, 0));
     }
 
     @Override
@@ -76,14 +79,14 @@ public class BookMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitInvokeDynamicInsn(String name, String descriptor, Handle bsm, Object... bsmArgs) {
-        super.visitInvokeDynamicInsn(name, this.mappings.mapDescriptor(descriptor), (Handle) this.mappings.mapValue(bsm), bsmArgs);
+        super.visitInvokeDynamicInsn(name, this.mappings.mapDescriptor(descriptor), (Handle) this.mappings.mapValue(bsm, 0), bsmArgs);
     }
 
     @Override
     public void visitLocalVariable(String name, String descriptor, String signature, Label start, Label end, int index) {
         descriptor = this.mappings.mapDescriptor(descriptor);
         if (!name.equals("this")) {
-            String mappedParameterName = this.mappings.getParameterName(this.owner, this.name, this.descriptor, index);
+            String mappedParameterName = this.mappings.getParameterName(this.owner, this.name, this.descriptor, index, 0);
             if (mappedParameterName == null) {
                 String className = Type.getType(descriptor).getClassName();
                 switch (className) {

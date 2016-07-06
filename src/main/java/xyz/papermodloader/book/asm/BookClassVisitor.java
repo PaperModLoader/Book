@@ -24,7 +24,7 @@ public class BookClassVisitor extends ClassVisitor {
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-        MappedMethod methodMapping = this.mappings.getMethodMapping(this.obfName, name, descriptor);
+        MappedMethod methodMapping = this.mappings.getMethodMapping(this.obfName, name, descriptor, access);
         MethodVisitor visitor = super.visitMethod(access, methodMapping != null ? methodMapping.getDeobf() : name, this.mappings.mapDescriptor(descriptor), this.mappings.mapSignature(signature, false, this.api), this.mappings.mapArray(exceptions));
         if (visitor != null) {
             return new BookMethodVisitor(name, this.obfName, descriptor, this.mappings, this.api, visitor);
@@ -34,7 +34,7 @@ public class BookClassVisitor extends ClassVisitor {
 
     @Override
     public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-        MappedField fieldMapping = this.mappings.getFieldMapping(this.obfName, name, descriptor);
+        MappedField fieldMapping = this.mappings.getFieldMapping(this.obfName, name, descriptor, access);
         return super.visitField(access, fieldMapping != null ? fieldMapping.getDeobf() : name, this.mappings.mapDescriptor(descriptor), this.mappings.mapSignature(signature, true, this.api), value);
     }
 
@@ -57,7 +57,7 @@ public class BookClassVisitor extends ClassVisitor {
             return new AnnotationVisitor(this.api, visitor) {
                 @Override
                 public void visit(String name, Object value) {
-                    super.visit(name, BookClassVisitor.this.mappings.mapValue(value));
+                    super.visit(name, BookClassVisitor.this.mappings.mapValue(value, 0));
                 }
 
                 @Override
