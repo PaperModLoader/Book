@@ -172,8 +172,8 @@ public class Mappings {
 
     public MappedField getFieldMapping(String owner, String name, String descriptor, int access) {
         MappedClass mapping = this.getMappedClass(owner);
-        if (mapping != null) {
-            MappedField field = this.getFieldMapping(name, descriptor, mapping);
+        if (mapping != null || access == -1) {
+            MappedField field = mapping != null ? this.getFieldMapping(name, descriptor, mapping) : null;
             if (field != null) {
                 return field;
             } else if (access == -1 || !(Modifier.isPrivate(access) || Modifier.isStatic(access))) {
