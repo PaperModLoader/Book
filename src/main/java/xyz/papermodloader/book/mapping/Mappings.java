@@ -50,7 +50,7 @@ public class Mappings {
     }
 
     public MappedClass getMappedClass(String obf) {
-        if (obf == null) {
+        if (obf == null || obf.contains("/")) {
             return null;
         }
         Type type = Type.getObjectType(obf);
@@ -92,6 +92,9 @@ public class Mappings {
     public String getClassMapping(String obf) {
         if (obf == null) {
             return null;
+        }
+        if (obf.contains("/")) {
+            return obf;
         }
         int dimensions = 0;
         Type type = Type.getObjectType(obf);
