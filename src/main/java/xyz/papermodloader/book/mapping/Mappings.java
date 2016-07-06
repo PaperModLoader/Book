@@ -138,8 +138,8 @@ public class Mappings {
 
     public MappedMethod getMethodMapping(String owner, String name, String descriptor, int access) {
         MappedClass mapping = this.getMappedClass(owner);
-        if (mapping != null) {
-            MappedMethod method = this.getMethodMapping(name, descriptor, mapping);
+        if (mapping != null || access == -1) {
+            MappedMethod method = mapping != null ? this.getMethodMapping(name, descriptor, mapping) : null;
             if (method != null) {
                 return method;
             } else if (access == -1 || !(Modifier.isPrivate(access) || Modifier.isStatic(access))) {
