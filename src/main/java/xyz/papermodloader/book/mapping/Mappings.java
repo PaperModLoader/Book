@@ -110,7 +110,7 @@ public class Mappings {
         if (split == null) {
             MappedClass mappedClass = this.getMappedClass(obf);
             if (mappedClass != null) {
-                return mappedClass.getDeobf();
+                mapping = mappedClass.getDeobf();
             }
         } else {
             MappedClass prevParent = null;
