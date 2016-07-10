@@ -1,10 +1,6 @@
 package xyz.papermodloader.book.asm;
 
-import org.objectweb.asm.Handle;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.Remapper;
+import org.objectweb.asm.*;
 import xyz.papermodloader.book.mapping.MappedField;
 import xyz.papermodloader.book.mapping.MappedMethod;
 import xyz.papermodloader.book.mapping.Mappings;
@@ -27,6 +23,24 @@ public class BookMethodVisitor extends MethodVisitor {
         this.owner = owner;
         this.descriptor = descriptor;
         this.mappings = mappings;
+    }
+
+    @Override
+    public AnnotationVisitor visitAnnotationDefault() {
+        AnnotationVisitor visitor = this.mv.visitAnnotationDefault();
+        return visitor != null ? new BookAnnotationVisitor(visitor, this.mappings, this.api) : null;
+    }
+
+    @Override
+    public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+        AnnotationVisitor visitor = this.mv.visitAnnotation(this.mappings.mapDescriptor(descriptor), visible);
+        return visitor != null ? new BookAnnotationVisitor(visitor, this.mappings, this.api) : null;
+    }
+
+    @Override
+    public AnnotationVisitor visitParameterAnnotation(int parameter, String descriptor, boolean visible) {
+        AnnotationVisitor visitor = this.mv.visitParameterAnnotation(parameter, this.mappings.mapDescriptor(descriptor), visible);
+        return visitor != null ? new BookAnnotationVisitor(visitor, this.mappings, this.api) : null;
     }
 
     @Override

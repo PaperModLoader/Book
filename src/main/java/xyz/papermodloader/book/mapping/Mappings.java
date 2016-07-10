@@ -149,10 +149,16 @@ public class Mappings {
     }
 
     public MappedMethod getMethodMapping(String owner, String name, String descriptor) {
+        if (owner == null || name == null) {
+            return null;
+        }
         return this.getMethodMapping(owner, name, descriptor, this.getAccess(false, owner, name, descriptor));
     }
 
     public MappedMethod getMethodMapping(String owner, String name, String descriptor, int access) {
+        if (owner == null || name == null) {
+            return null;
+        }
         MappedClass mapping = this.getMappedClass(owner);
         if (mapping != null || access == -1) {
             MappedMethod method = mapping != null ? this.getMethodMapping(name, descriptor, mapping) : null;

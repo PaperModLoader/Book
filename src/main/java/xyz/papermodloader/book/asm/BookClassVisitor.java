@@ -1,6 +1,9 @@
 package xyz.papermodloader.book.asm;
 
-import org.objectweb.asm.*;
+import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.MethodVisitor;
 import xyz.papermodloader.book.mapping.MappedField;
 import xyz.papermodloader.book.mapping.MappedMethod;
 import xyz.papermodloader.book.mapping.Mappings;
@@ -41,7 +44,7 @@ public class BookClassVisitor extends ClassVisitor {
     @Override
     public void visitInnerClass(String name, String outerName, String innerName, int access) {
         String mapped = this.mappings.getClassMapping(name);
-        super.visitInnerClass(mapped, this.mappings.getClassMapping(outerName), mapped.substring(mapped.lastIndexOf(mapped.contains("$") ? '$' : '/') + 1), access);
+        super.visitInnerClass(mapped, this.mappings.getClassMapping(outerName), innerName != null ? mapped.substring(mapped.lastIndexOf(mapped.contains("$") ? '$' : '/') + 1) : null, access);
     }
 
     @Override
