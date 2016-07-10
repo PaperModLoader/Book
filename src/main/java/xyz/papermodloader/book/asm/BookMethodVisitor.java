@@ -105,31 +105,42 @@ public class BookMethodVisitor extends MethodVisitor {
                 String className = Type.getType(descriptor).getClassName();
                 switch (className) {
                     case "boolean":
+                    case "java.lang.Boolean":
                         className = "z";
                         break;
                     case "char":
+                    case "java.lang.Character":
                         className = "c";
                         break;
                     case "byte":
+                    case "java.lang.Byte":
                         className = "b";
                         break;
                     case "short":
+                    case "java.lang.Short":
                         className = "s";
                         break;
                     case "int":
+                    case "java.lang.Integer":
                         className = "i";
                         break;
                     case "float":
+                    case "java.lang.Float":
                         className = "f";
                         break;
                     case "long":
+                    case "java.lang.Long":
                         className = "l";
                         break;
                     case "double":
+                    case "java.lang.Double":
                         className = "d";
                         break;
                     case "java.lang.Class":
                         className = "cls";
+                        break;
+                    case "java.lang.Enum":
+                        className = "e";
                         break;
                 }
                 if (className.endsWith("[]")) {
