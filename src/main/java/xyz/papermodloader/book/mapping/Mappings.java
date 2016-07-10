@@ -160,18 +160,16 @@ public class Mappings {
             return null;
         }
         MappedClass mapping = this.getMappedClass(owner);
-        if (mapping != null || access == -1) {
-            MappedMethod method = mapping != null ? this.getMethodMapping(name, descriptor, mapping) : null;
-            if (method != null) {
-                return method;
-            } else if (access == -1 || !(Modifier.isPrivate(access) || Modifier.isStatic(access))) {
-                List<String> parents = this.inheritance.get(owner);
-                if (parents != null) {
-                    for (String parent : parents) {
-                        method = this.getMethodMapping(parent, name, descriptor, access);
-                        if (method != null) {
-                            return method;
-                        }
+        MappedMethod method = mapping != null ? this.getMethodMapping(name, descriptor, mapping) : null;
+        if (method != null) {
+            return method;
+        } else if (access == -1 || !(Modifier.isPrivate(access) || Modifier.isStatic(access))) {
+            List<String> parents = this.inheritance.get(owner);
+            if (parents != null) {
+                for (String parent : parents) {
+                    method = this.getMethodMapping(parent, name, descriptor, access);
+                    if (method != null) {
+                        return method;
                     }
                 }
             }
@@ -194,18 +192,16 @@ public class Mappings {
 
     public MappedField getFieldMapping(String owner, String name, String descriptor, int access) {
         MappedClass mapping = this.getMappedClass(owner);
-        if (mapping != null || access == -1) {
-            MappedField field = mapping != null ? this.getFieldMapping(name, descriptor, mapping) : null;
-            if (field != null) {
-                return field;
-            } else if (access == -1 || !(Modifier.isPrivate(access) || Modifier.isStatic(access))) {
-                List<String> parents = this.inheritance.get(owner);
-                if (parents != null) {
-                    for (String parent : parents) {
-                        field = this.getFieldMapping(parent, name, descriptor, access);
-                        if (field != null) {
-                            return field;
-                        }
+        MappedField field = mapping != null ? this.getFieldMapping(name, descriptor, mapping) : null;
+        if (field != null) {
+            return field;
+        } else if (access == -1 || !(Modifier.isPrivate(access) || Modifier.isStatic(access))) {
+            List<String> parents = this.inheritance.get(owner);
+            if (parents != null) {
+                for (String parent : parents) {
+                    field = this.getFieldMapping(parent, name, descriptor, access);
+                    if (field != null) {
+                        return field;
                     }
                 }
             }
