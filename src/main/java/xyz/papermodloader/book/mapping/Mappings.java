@@ -145,6 +145,9 @@ public class Mappings {
                 mapping = '[' + mapping;
             }
         }
+        if (!mapping.contains("/")) {
+            mapping = "none/" + mapping;
+        }
         return mapping;
     }
 
