@@ -13,23 +13,23 @@ public class BookAnnotationVisitor extends AnnotationVisitor {
 
     @Override
     public void visit(String name, Object value) {
-        this.av.visit(name, this.mappings.mapValue(value, 0));
+        super.visit(name, this.mappings.mapValue(value, 0));
     }
 
     @Override
     public void visitEnum(String name, String descriptor, String value) {
-        this.av.visitEnum(name, this.mappings.mapDescriptor(descriptor), value);
+        super.visitEnum(name, this.mappings.mapDescriptor(descriptor), value);
     }
 
     @Override
     public AnnotationVisitor visitAnnotation(String name, String descriptor) {
-        AnnotationVisitor visitor = this.av.visitAnnotation(name, this.mappings.mapDescriptor(descriptor));
+        AnnotationVisitor visitor = super.visitAnnotation(name, this.mappings.mapDescriptor(descriptor));
         return visitor != null ? (visitor == this.av ? this : new BookAnnotationVisitor(visitor, this.mappings, this.api)) : null;
     }
 
     @Override
     public AnnotationVisitor visitArray(String name) {
-        AnnotationVisitor visitor = this.av.visitArray(name);
+        AnnotationVisitor visitor = super.visitArray(name);
         return visitor != null ? (visitor == this.av ? this : new BookAnnotationVisitor(visitor, this.mappings, this.api)) : null;
     }
 }

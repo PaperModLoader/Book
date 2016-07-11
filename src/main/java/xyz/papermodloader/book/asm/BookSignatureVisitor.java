@@ -109,7 +109,7 @@ public class BookSignatureVisitor extends SignatureVisitor {
 
     @Override
     public void visitEnd() {
-        this.classes.pop();
         this.visitor.visitEnd();
+        this.classes.pop();
     }
 }

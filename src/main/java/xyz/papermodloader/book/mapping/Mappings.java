@@ -139,14 +139,14 @@ public class Mappings {
                 }
             }
         }
+        if (!mapping.contains("/")) {
+            mapping = "none/" + mapping;
+        }
         if (dimensions > 0) {
             mapping = "L" + mapping + ";";
             for (int i = 0; i < dimensions; i++) {
                 mapping = '[' + mapping;
             }
-        }
-        if (!mapping.contains("/")) {
-            mapping = "none/" + mapping;
         }
         return mapping;
     }
