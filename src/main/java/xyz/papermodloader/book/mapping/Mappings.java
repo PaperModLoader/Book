@@ -96,14 +96,14 @@ public class Mappings {
         if (obf.contains("/")) {
             return obf;
         }
-        boolean isType = false;
+        boolean isObject = false;
         int dimensions = 0;
         Type type = Type.getObjectType(obf);
         if (type.getSort() == Type.ARRAY) {
-            isType = obf.endsWith(";");
+            isObject = obf.endsWith(";");
             obf = type.getElementType().getDescriptor();
             dimensions = type.getDimensions();
-            if (isType) {
+            if (isObject) {
                 obf = obf.substring(1, obf.length() - 1);
             }
         }
@@ -116,6 +116,7 @@ public class Mappings {
             }
         } else {
             MappedClass prevParent = null;
+            boolean broken = false;
             for (String parent : split) {
                 if (prevParent == null) {
                     prevParent = this.getMappedClass(parent);
@@ -126,18 +127,21 @@ public class Mappings {
                     mapping = prevParent.getDeobf();
                 } else {
                     MappedClass innerClass = null;
-                    for (MappedClass inner : prevParent.getClasses()) {
-                        if (inner.getObf().equals(parent)) {
-                            innerClass = inner;
-                            break;
+                    if (!broken) {
+                        for (MappedClass inner : prevParent.getClasses()) {
+                            if (inner.getObf().equals(parent)) {
+                                innerClass = inner;
+                                break;
+                            }
                         }
                     }
-                    if (innerClass == null) {
-                        mapping = obf;
-                        break;
+                    if (innerClass == null || broken) {
+                        mapping = mapping + "$" + parent;
+                        broken = true;
+                    } else {
+                        mapping += "$" + innerClass.getDeobf();
+                        prevParent = innerClass;
                     }
-                    mapping += "$" + innerClass.getDeobf();
-                    prevParent = innerClass;
                 }
             }
         }
@@ -149,7 +153,7 @@ public class Mappings {
             mapping = "none/" + mapping;
         }
         if (dimensions > 0) {
-            if (isType) {
+            if (isObject) {
                 mapping = "L" + mapping + ";";
             }
             for (int i = 0; i < dimensions; i++) {

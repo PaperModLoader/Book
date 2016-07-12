@@ -73,7 +73,7 @@ public class BookMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitTypeInsn(int opcode, String type) {
-        super.visitTypeInsn(opcode, this.mappings.getClassMapping(type));
+        super.visitTypeInsn(opcode, this.mappings.mapType(Type.getObjectType(type)).getInternalName());
     }
 
     @Override
