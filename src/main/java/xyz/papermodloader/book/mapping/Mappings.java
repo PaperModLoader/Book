@@ -96,13 +96,15 @@ public class Mappings {
         if (obf.contains("/")) {
             return obf;
         }
+        boolean isType = false;
         int dimensions = 0;
         Type type = Type.getObjectType(obf);
         if (type.getSort() == Type.ARRAY) {
-            if (obf.endsWith(";")) {
-                obf = type.getElementType().getDescriptor();
+            isType = obf.endsWith(";");
+            obf = type.getElementType().getDescriptor();
+            dimensions = type.getDimensions();
+            if (isType) {
                 obf = obf.substring(1, obf.length() - 1);
-                dimensions = type.getDimensions();
             }
         }
         String[] split = obf.contains("$") ? obf.split("\\$") : null;
@@ -139,11 +141,17 @@ public class Mappings {
                 }
             }
         }
-        if (!mapping.contains("/")) {
+        boolean none = !mapping.contains("/");
+        if (mapping.equals("I") | mapping.equals("D") || mapping.equals("Z") || mapping.equals("J")) {
+            none = false;
+        }
+        if (none) {
             mapping = "none/" + mapping;
         }
         if (dimensions > 0) {
-            mapping = "L" + mapping + ";";
+            if (isType) {
+                mapping = "L" + mapping + ";";
+            }
             for (int i = 0; i < dimensions; i++) {
                 mapping = '[' + mapping;
             }

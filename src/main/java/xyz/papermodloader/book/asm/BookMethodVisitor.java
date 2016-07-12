@@ -103,55 +103,57 @@ public class BookMethodVisitor extends MethodVisitor {
             String mappedParameterName = this.mappings.getParameterName(this.owner, this.name, this.descriptor, index, 0);
             if (mappedParameterName == null) {
                 String className = Type.getType(descriptor).getClassName();
+                String simpleClassName = (className.contains(".") ? className.substring(className.lastIndexOf('.') + 1) : className);
+                String newClassName = className;
                 switch (className) {
                     case "boolean":
                     case "java.lang.Boolean":
-                        className = "z";
+                        newClassName = "z";
                         break;
                     case "char":
                     case "java.lang.Character":
-                        className = "c";
+                        newClassName = "c";
                         break;
                     case "byte":
                     case "java.lang.Byte":
-                        className = "b";
+                        newClassName = "b";
                         break;
                     case "short":
                     case "java.lang.Short":
-                        className = "s";
+                        newClassName = "s";
                         break;
                     case "int":
                     case "java.lang.Integer":
-                        className = "i";
+                        newClassName = "i";
                         break;
                     case "float":
                     case "java.lang.Float":
-                        className = "f";
+                        newClassName = "f";
                         break;
                     case "long":
                     case "java.lang.Long":
-                        className = "l";
+                        newClassName = "l";
                         break;
                     case "double":
                     case "java.lang.Double":
-                        className = "d";
+                        newClassName = "d";
                         break;
                     case "java.lang.Class":
-                        className = "cls";
+                        newClassName = "cls";
                         break;
                     case "java.lang.Enum":
-                        className = "e";
+                        newClassName = "e";
                         break;
                 }
-                if (className.endsWith("[]")) {
-                    className = className.replaceAll("\\[\\]", "Array");
+                if (newClassName.endsWith("[]")) {
+                    newClassName = newClassName.replaceAll("\\[\\]", "Array");
                 }
-                if (className.length() > 0) {
-                    name = (className.contains(".") ? className.substring(className.lastIndexOf('.') + 1) : className);
+                if (newClassName.length() > 0) {
+                    name = (newClassName.contains(".") ? newClassName.substring(newClassName.lastIndexOf('.') + 1) : newClassName);
                     int variableIndex = this.variableIndex.get(name);
                     name = Character.toLowerCase(name.charAt(0)) + name.substring(1);
-                    this.variableIndex.put(name, variableIndex + 1);
-                    name += (variableIndex == 0 ? "" : variableIndex);
+                    this.variableIndex.put(name, variableIndex++);
+                    name += (variableIndex == 1 && !(simpleClassName.equals(name)) ? "" : variableIndex);
                 }
             } else {
                 name = mappedParameterName;
