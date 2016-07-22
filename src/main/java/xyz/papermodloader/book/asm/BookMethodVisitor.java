@@ -14,14 +14,16 @@ public class BookMethodVisitor extends MethodVisitor {
     private String name;
     private String owner;
     private String descriptor;
+    private String ownerSignature;
 
     private Map<String, Integer> variableIndex = new DefaultedHashMap<>(0);
 
-    public BookMethodVisitor(String name, String owner, String descriptor, Mappings mappings, int api, MethodVisitor visitor) {
+    public BookMethodVisitor(String name, String owner, String descriptor, String ownerSignature, Mappings mappings, int api, MethodVisitor visitor) {
         super(api, visitor);
         this.name = name;
         this.owner = owner;
         this.descriptor = descriptor;
+        this.ownerSignature = ownerSignature;
         this.mappings = mappings;
     }
 
@@ -67,7 +69,7 @@ public class BookMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
-        MappedMethod methodMapping = this.mappings.getMethodMapping(owner, name, descriptor);
+        MappedMethod methodMapping = this.mappings.getMethodMapping(owner, name, descriptor, ownerSignature);
         super.visitMethodInsn(opcode, this.mappings.getClassMapping(owner), methodMapping != null ? methodMapping.getDeobf() : name, this.mappings.mapDescriptor(descriptor), isInterface);
     }
 
@@ -78,7 +80,7 @@ public class BookMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitLdcInsn(Object cst) {
-        super.visitLdcInsn(this.mappings.mapValue(cst, 0));
+        super.visitLdcInsn(this.mappings.mapValue(cst, 0, ownerSignature));
     }
 
     @Override
@@ -93,14 +95,14 @@ public class BookMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitInvokeDynamicInsn(String name, String descriptor, Handle bsm, Object... bsmArgs) {
-        super.visitInvokeDynamicInsn(name, this.mappings.mapDescriptor(descriptor), (Handle) this.mappings.mapValue(bsm, 0), bsmArgs);
+        super.visitInvokeDynamicInsn(name, this.mappings.mapDescriptor(descriptor), (Handle) this.mappings.mapValue(bsm, 0, ownerSignature), bsmArgs);
     }
 
     @Override
     public void visitLocalVariable(String name, String descriptor, String signature, Label start, Label end, int index) {
         descriptor = this.mappings.mapDescriptor(descriptor);
         if (!name.equals("this")) {
-            String mappedParameterName = this.mappings.getParameterName(this.owner, this.name, this.descriptor, index, 0);
+            String mappedParameterName = this.mappings.getParameterName(this.owner, this.name, this.descriptor, index, 0, ownerSignature);
             if (mappedParameterName == null) {
                 String className = Type.getType(descriptor).getClassName();
                 String simpleClassName = (className.contains(".") ? className.substring(className.lastIndexOf('.') + 1) : className);
@@ -147,6 +149,9 @@ public class BookMethodVisitor extends MethodVisitor {
                 }
                 if (newClassName.endsWith("[]")) {
                     newClassName = newClassName.replaceAll("\\[\\]", "Array");
+                }
+                if (newClassName.contains("$")) {
+                    newClassName = newClassName.substring(newClassName.lastIndexOf('$') + 1);
                 }
                 if (newClassName.length() > 0) {
                     name = (newClassName.contains(".") ? newClassName.substring(newClassName.lastIndexOf('.') + 1) : newClassName);

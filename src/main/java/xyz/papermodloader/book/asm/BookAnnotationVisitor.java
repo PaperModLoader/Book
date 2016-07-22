@@ -13,7 +13,7 @@ public class BookAnnotationVisitor extends AnnotationVisitor {
 
     @Override
     public void visit(String name, Object value) {
-        super.visit(name, this.mappings.mapValue(value, 0));
+        super.visit(name, this.mappings.mapValue(value, 0, null));
     }
 
     @Override

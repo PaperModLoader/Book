@@ -112,4 +112,9 @@ public class BookSignatureVisitor extends SignatureVisitor {
         this.visitor.visitEnd();
         this.classes.pop();
     }
+
+    @Override
+    public String toString() {
+        return this.visitor.toString();
+    }
 }

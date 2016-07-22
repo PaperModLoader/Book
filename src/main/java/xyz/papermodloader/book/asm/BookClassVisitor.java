@@ -12,6 +12,7 @@ public class BookClassVisitor extends ClassVisitor {
     private Mappings mappings;
     private String name;
     private String obfName;
+    private String signature;
 
     public BookClassVisitor(ClassVisitor visitor, Mappings mappings, int api) {
         super(api, visitor);
@@ -22,15 +23,16 @@ public class BookClassVisitor extends ClassVisitor {
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
         this.name = this.mappings.getClassMapping(name);
         this.obfName = name;
-        super.visit(version, access, this.name, this.mappings.mapSignature(signature, false, this.api), this.mappings.getClassMapping(superName), this.mappings.mapArray(interfaces));
+        this.signature = this.mappings.mapSignature(signature, false, this.api);
+        super.visit(version, access, this.name, this.signature, this.mappings.getClassMapping(superName), this.mappings.mapArray(interfaces));
     }
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-        MappedMethod methodMapping = this.mappings.getMethodMapping(this.obfName, name, descriptor, access);
+        MappedMethod methodMapping = this.mappings.getMethodMapping(this.obfName, name, descriptor, access, this.signature);
         MethodVisitor visitor = super.visitMethod(access, methodMapping != null ? methodMapping.getDeobf() : name, this.mappings.mapDescriptor(descriptor), this.mappings.mapSignature(signature, false, this.api), this.mappings.mapArray(exceptions));
         if (visitor != null) {
-            return new BookMethodVisitor(name, this.obfName, descriptor, this.mappings, this.api, visitor);
+            return new BookMethodVisitor(name, this.obfName, descriptor, this.signature, this.mappings, this.api, visitor);
         }
         return null;
     }
@@ -49,7 +51,7 @@ public class BookClassVisitor extends ClassVisitor {
 
     @Override
     public void visitOuterClass(String owner, String name, String descriptor) {
-        MappedMethod methodMapping = this.mappings.getMethodMapping(owner, name, descriptor);
+        MappedMethod methodMapping = this.mappings.getMethodMapping(owner, name, descriptor, signature);
         super.visitOuterClass(this.mappings.getClassMapping(owner), methodMapping != null ? methodMapping.getDeobf() : name, this.mappings.mapDescriptor(descriptor));
     }
 
@@ -60,7 +62,7 @@ public class BookClassVisitor extends ClassVisitor {
             return new AnnotationVisitor(this.api, visitor) {
                 @Override
                 public void visit(String name, Object value) {
-                    super.visit(name, BookClassVisitor.this.mappings.mapValue(value, 0));
+                    super.visit(name, BookClassVisitor.this.mappings.mapValue(value, 0, BookClassVisitor.this.signature));
                 }
 
                 @Override

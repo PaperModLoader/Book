@@ -163,14 +163,14 @@ public class Mappings {
         return mapping;
     }
 
-    public MappedMethod getMethodMapping(String owner, String name, String descriptor) {
+    public MappedMethod getMethodMapping(String owner, String name, String descriptor, String classSignature) {
         if (owner == null || name == null) {
             return null;
         }
-        return this.getMethodMapping(owner, name, descriptor, this.getAccess(false, owner, name, descriptor));
+        return this.getMethodMapping(owner, name, descriptor, this.getAccess(false, owner, name, descriptor), classSignature);
     }
 
-    public MappedMethod getMethodMapping(String owner, String name, String descriptor, int access) {
+    public MappedMethod getMethodMapping(String owner, String name, String descriptor, int access, String classSignature) {
         if (owner == null || name == null) {
             return null;
         }
@@ -182,7 +182,7 @@ public class Mappings {
             List<String> parents = this.inheritance.get(owner);
             if (parents != null) {
                 for (String parent : parents) {
-                    method = this.getMethodMapping(parent, name, descriptor, access);
+                    method = this.getMethodMapping(parent, name, descriptor, access, classSignature);
                     if (method != null) {
                         return method;
                     }
@@ -277,20 +277,16 @@ public class Mappings {
             case Type.OBJECT:
                 return Type.getObjectType(this.getClassMapping(type.getInternalName()));
             case Type.ARRAY:
-                String descriptor = this.mapDescriptor(type.getDescriptor());
-                for (int i = 0; i < type.getDimensions(); i++) {
-                    descriptor = "[" + descriptor;
-                }
-                return Type.getType(descriptor);
+                return Type.getType(this.mapDescriptor(type.getDescriptor()));
             case Type.METHOD:
                 return Type.getMethodType(this.mapDescriptor(type.getDescriptor()));
         }
         return type;
     }
 
-    public String getParameterName(String owner, String name, String descriptor, int parameterIndex, int access) {
+    public String getParameterName(String owner, String name, String descriptor, int parameterIndex, int access, String classSignature) {
         if (parameterIndex >= 0) {
-            MappedMethod method = this.getMethodMapping(owner, name, descriptor, access);
+            MappedMethod method = this.getMethodMapping(owner, name, descriptor, access, classSignature);
             if (method != null) {
                 MappedParameter[] parameters = method.getParameters();
                 if (parameters != null) {
@@ -363,12 +359,12 @@ public class Mappings {
         return fixed.toString();
     }
 
-    public Object mapValue(Object cst, int access) {
+    public Object mapValue(Object cst, int access, String classSignature) {
         if (cst instanceof Type) {
             return this.mapType((Type) cst);
         } else if (cst instanceof Handle) {
             Handle handle = (Handle) cst;
-            return new Handle(handle.getTag(), this.getClassMapping(handle.getOwner()), this.getMethodMapping(handle.getOwner(), handle.getName(), handle.getDesc(), access).getDeobf(), this.mapDescriptor(handle.getDesc()), handle.isInterface());
+            return new Handle(handle.getTag(), this.getClassMapping(handle.getOwner()), this.getMethodMapping(handle.getOwner(), handle.getName(), handle.getDesc(), access, classSignature).getDeobf(), this.mapDescriptor(handle.getDesc()), handle.isInterface());
         }
         return cst;
     }
